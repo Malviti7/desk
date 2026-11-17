@@ -75,6 +75,20 @@ CREATE TABLE IF NOT EXISTS alerts (
   key VARCHAR PRIMARY KEY, ts TIMESTAMP, severity VARCHAR,
   category VARCHAR, message VARCHAR, sent BOOLEAN
 );
+CREATE SEQUENCE IF NOT EXISTS tv_seq START 1;
+CREATE TABLE IF NOT EXISTS tv_alerts (
+  id INTEGER PRIMARY KEY, ts TIMESTAMP, symbol VARCHAR, action VARCHAR, price DOUBLE,
+  interval VARCHAR, message VARCHAR, raw JSON
+);
+CREATE TABLE IF NOT EXISTS ms_ratings (
+  symbol VARCHAR, as_of DATE, list_name VARCHAR, name VARCHAR, composite DOUBLE,
+  eps_rating DOUBLE, rs DOUBLE, smr VARCHAR, acc_dis VARCHAR, group_rank DOUBLE,
+  pattern VARCHAR, buy_point DOUBLE, pct_off_high DOUBLE, price DOUBLE, raw JSON,
+  PRIMARY KEY (symbol, as_of)
+);
+CREATE TABLE IF NOT EXISTS ms_outlook (
+  ts TIMESTAMP, status VARCHAR, exposure_pct DOUBLE, note VARCHAR, set_by VARCHAR
+);
 CREATE TABLE IF NOT EXISTS ingest_log (
   job VARCHAR, ts TIMESTAMP, status VARCHAR, rows INTEGER, error VARCHAR
 );

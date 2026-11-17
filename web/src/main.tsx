@@ -9,9 +9,11 @@ import Morning from "./pages/Morning";
 import { Data, Ideas, News } from "./pages/Other";
 import Portfolio from "./pages/Portfolio";
 import Risk from "./pages/Risk";
+import Charts from "./pages/Charts";
+import Leaders from "./pages/Leaders";
 
 const TABS: Record<string, () => JSX.Element> = {
-  Morning, Macro, Crypto, Equities, Portfolio, Risk, "News & Calendar": News, Ideas, Data,
+  Morning, Charts, Macro, Crypto, Equities, Leaders, Portfolio, Risk, "News & Calendar": News, Ideas, Data,
 };
 
 function Clock() {
@@ -24,10 +26,18 @@ function Clock() {
 }
 
 function App() {
-  const initial = decodeURIComponent(location.hash.slice(1)) || "Morning";
-  const [tab, setTab] = useState(TABS[initial] ? initial : "Morning");
+  const tabFromHash = () => {
+    const t = decodeURIComponent(location.hash.slice(1)).split("/")[0];
+    return TABS[t] ? t : "Morning";
+  };
+  const [tab, setTab] = useState(tabFromHash);
   const { data: health } = useApi("/health", 60);
-  useEffect(() => { location.hash = tab; }, [tab]);
+  useEffect(() => {
+    const on = () => setTab(tabFromHash());
+    window.addEventListener("hashchange", on);
+    return () => window.removeEventListener("hashchange", on);
+  }, []);
+  useEffect(() => { if (tabFromHash() !== tab) location.hash = tab; }, [tab]);
   const Page = TABS[tab];
   return (
     <div className="app">

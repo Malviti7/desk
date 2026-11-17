@@ -178,5 +178,26 @@ def seed(store: Store, days: int = 520) -> None:
                 hrows.append({"cik": cik, "fund": fund, "period": date(2026, 9, 30), "issuer": iss, "cusip": iss[:9],
                               "value_usd": RNG.uniform(1e8, 5e9), "shares": RNG.uniform(1e5, 1e7)})
     store.insert_df("holdings_13f", pd.DataFrame(hrows))
+    # MarketSurge-style ratings and IBD outlook
+    pats = ["Cup with handle", "Flat base", "Double bottom", "Ascending base", "Cup without handle", "Base on base"]
+    mrows = []
+    for i, sym in enumerate(config.get("equities.watchlist", [])):
+        px = float(store.series(f"yf:{sym}").iloc[-1])
+        offset = [0.02, 0.07, -0.03, 0.01, 0.12, -0.06, 0.04, 0.0, 0.09, -0.01][i % 10]
+        mrows.append({"symbol": sym, "as_of": date.today(), "list_name": "IBD 50 (demo)", "name": sym,
+                      "composite": float(99 - i * 3), "eps_rating": float(95 - i * 2), "rs": float(97 - i * 4),
+                      "smr": "AB"[i % 2], "acc_dis": "ABC"[i % 3] + ("+" if i % 2 else ""), "group_rank": float(5 + i * 7),
+                      "pattern": pats[i % len(pats)], "buy_point": round(px / (1 + offset), 2),
+                      "pct_off_high": round(-abs(offset) * 100, 1), "price": px, "raw": "{}"})
+    store.insert_df("ms_ratings", pd.DataFrame(mrows))
+    store.execute("INSERT INTO ms_outlook VALUES (now(), 'confirmed_uptrend', 80, 'demo', 'demo')")
+    for i, (sym, act, px, msg) in enumerate([
+            ("NVDA", "buy", None, "Breakout above pivot on 1.6x volume"),
+            ("BTC", "alert", None, "Reclaimed 50-day line"),
+            ("META", "sell", None, "Closed below 21-day EMA")]):
+        p = float(store.series(f"yf:{sym}").iloc[-1]) if sym != "BTC" else CRYPTO["BTC"]
+        store.execute("INSERT INTO tv_alerts VALUES (nextval('tv_seq'), ?, ?, ?, ?, 'D', ?, '{}')",
+                      [now - timedelta(hours=1 + i * 3), sym, act, p, msg])
+
     for j in ["fred", "yahoo", "hyperliquid_market", "hyperliquid_account", "news", "cftc"]:
         store.log(j, "ok", 0, "demo data")

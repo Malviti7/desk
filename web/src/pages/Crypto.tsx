@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useApi } from "../api";
 import { Card, Chg, IndicatorTable, LineViz, Loading, Table, Tile } from "../components/ui";
+import { openChart } from "../components/TVChart";
 import { fixed, money, num, sign } from "../fmt";
 
 export default function Crypto() {
@@ -22,6 +23,7 @@ export default function Crypto() {
       <Card title="Perps" right="click a row to chart funding · • = held">
         <Table rows={c.perps} initialSort="oi_usd" cols={[
           { key: "coin", label: "", left: true, render: (r) => <a onClick={() => setCoin(r.coin)} style={{ cursor: "pointer" }}><b>{r.coin}</b>{r.held ? " •" : ""}</a> },
+          { key: "chart", label: "", render: (r) => <a className="btn" title="Chart" onClick={() => openChart(r.coin, true)}>⤢</a>, sort: () => 0 },
           { key: "mark", label: "Mark", render: (r) => <span className="num">{num(r.mark)}</span> },
           { key: "chg_24h", label: "24h", render: (r) => <Chg v={r.chg_24h} /> },
           { key: "funding_ann", label: "Funding (ann)", render: (r) => <span className={`num ${sign(r.funding_ann)}`}>{num(r.funding_ann, 1)}%</span> },

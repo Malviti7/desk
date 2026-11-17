@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { api, useApi } from "../api";
 import { Card, LineViz, Loading, Table, Tile } from "../components/ui";
+import { openChart } from "../components/TVChart";
 import { days, fixed, money, num, sign } from "../fmt";
 
 function ThesisEditor({ symbols, onSaved }: { symbols: string[]; onSaved: () => void }) {
@@ -44,7 +45,7 @@ export default function Portfolio() {
       </div>
       <Card title="Positions" right="all accounts">
         <Table rows={p.positions} cols={[
-          { key: "symbol", label: "", left: true, render: (r) => <b>{r.symbol}</b> },
+          { key: "symbol", label: "", left: true, render: (r) => r.asset_class === "cash" ? <b>{r.symbol}</b> : <a style={{ cursor: "pointer" }} title="Open chart" onClick={() => openChart(r.symbol, r.asset_class.startsWith("crypto"))}><b>{r.symbol}</b> ⤢</a> },
           { key: "account", label: "Acct", left: true, render: (r) => <span className="muted">{r.account}</span> },
           { key: "asset_class", label: "Type", left: true, render: (r) => <span className="pill">{r.asset_class.replace("crypto_", "")}</span> },
           { key: "qty", label: "Qty", render: (r) => <span className="num">{num(r.qty)}</span> },

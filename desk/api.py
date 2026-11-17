@@ -15,7 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from . import alerts as alerts_mod
-from . import config, ingest
+from . import config, ingest, integrations
 from .analytics import brief, crypto, positioning, regime, risk
 from .analytics.common import clean, daily, indicator
 from .store import Store, get_store, utcnow
@@ -224,6 +224,67 @@ async def ingest_run(job: str) -> Any:
     if job not in ingest.JOBS():
         raise HTTPException(404, f"Unknown job. Options: all, {', '.join(ingest.JOBS())}")
     return await asyncio.to_thread(ingest.run_job, store(), job)
+
+
+# ------------------------------------------------------------------ TradingView + MarketSurge
+@app.post("/api/webhooks/tradingview/{secret}")
+async def tv_webhook(secret: str, request: Request) -> dict:
+    """No bearer auth: TradingView can't send headers. The secret in the path is the auth."""
+    expected = config.env("TV_WEBHOOK_SECRET")
+    if not expected or secret != expected:
+        raise HTTPException(403, "bad secret")
+    body = await request.body()
+    if len(body) > 10_000:
+        raise HTTPException(413, "too large")
+    return integrations.record_tradingview(store(), body)
+
+
+@app.get("/api/tradingview/alerts", dependencies=[api])
+def tv_alerts(limit: int = 50) -> list[dict]:
+    return integrations.tradingview_alerts(store(), limit)
+
+
+class MSImport(BaseModel):
+    csv: str
+    list_name: str = "import"
+
+
+@app.post("/api/marketsurge/import", dependencies=[api])
+def ms_import(m: MSImport) -> dict:
+    return integrations.import_marketsurge(store(), m.csv, m.list_name)
+
+
+class Outlook(BaseModel):
+    status: str
+    exposure_pct: float | None = None
+    note: str = ""
+    set_by: str = "user"
+
+
+@app.get("/api/marketsurge/outlook", dependencies=[api])
+def ms_outlook() -> dict | None:
+    return integrations.outlook(store())
+
+
+@app.put("/api/marketsurge/outlook", dependencies=[api])
+def put_outlook(o: Outlook) -> dict:
+    return integrations.set_outlook(store(), o.status, o.exposure_pct, o.note, o.set_by)
+
+
+@app.get("/api/leaders", dependencies=[api])
+def get_leaders() -> list[dict]:
+    return integrations.leaders(store())
+
+
+@app.get("/api/charts/config", dependencies=[api])
+def charts_config() -> dict:
+    return integrations.chart_config(store())
+
+
+@app.get("/api/config/webhook", dependencies=[api])
+def webhook_info() -> dict:
+    return {"configured": bool(config.env("TV_WEBHOOK_SECRET")),
+            "path": "/api/webhooks/tradingview/<TV_WEBHOOK_SECRET>"}
 
 
 class Notify(BaseModel):

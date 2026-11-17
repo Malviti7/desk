@@ -227,6 +227,36 @@ def refresh_data(job: str = "all") -> str:
 
 
 @mcp.tool()
+def get_leaders() -> str:
+    """IBD MarketSurge leaders imported by the user: Composite, EPS, RS, SMR, Acc/Dis, group rank,
+    base pattern, buy point, live price, distance from buy point, and zone (buy zone / extended /
+    below pivot). Use for the Momentum/CANSLIM playbook."""
+    return _out(_call("GET", "/api/leaders"))
+
+
+@mcp.tool()
+def import_marketsurge_ratings(csv_text: str, list_name: str = "agent-import") -> str:
+    """Import MarketSurge ratings from CSV or tab-separated text the user pasted. Needs a Symbol
+    column; recognizes Composite, EPS, RS, SMR, Acc/Dis, group rank, pattern/base, pivot/buy point."""
+    return _out(_call("POST", "/api/marketsurge/import", json={"csv": csv_text, "list_name": list_name}))
+
+
+@mcp.tool()
+def set_market_outlook(status: str, exposure_pct: float | None = None, note: str = "", agent: str = "hermes") -> str:
+    """Record IBD's market outlook as the user reports it. status: confirmed_uptrend,
+    uptrend_under_pressure, rally_attempt, market_in_correction. exposure_pct: IBD's suggested
+    exposure. It becomes the first regime signal."""
+    return _out(_call("PUT", "/api/marketsurge/outlook", json={"status": status, "exposure_pct": exposure_pct,
+                                                               "note": note, "set_by": agent}))
+
+
+@mcp.tool()
+def get_tradingview_alerts(limit: int = 30) -> str:
+    """Alerts the user's TradingView charts sent to Desk by webhook (symbol, action, price, message)."""
+    return _out(_call("GET", "/api/tradingview/alerts", params={"limit": limit}))
+
+
+@mcp.tool()
 def get_data_status() -> str:
     """When each data job last ran, whether it succeeded, and why it was skipped (e.g. missing key)."""
     return _out(_call("GET", "/api/ingest/status"))

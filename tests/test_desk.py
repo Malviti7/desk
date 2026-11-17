@@ -83,3 +83,27 @@ def test_what_if(store):
     more = risk.run_stress(store, {"btc": -0.2, "add": [{"symbol": "SOL", "notional": 50000}]})
     assert more["total_pnl"] < base["total_pnl"]
     assert any(p["symbol"] == "SOL" and p["notional"] == 50000 for p in more["positions"])
+
+
+def test_tradingview_parse_and_record(store):
+    from desk import integrations
+    j = integrations.parse_tradingview(b'{"ticker": "NASDAQ:NVDA", "action": "BUY", "close": "141.2", "message": "breakout"}')
+    assert (j["symbol"], j["action"], j["price"]) == ("NVDA", "buy", 141.2)
+    t = integrations.parse_tradingview(b"SOL crossed 240")
+    assert t["symbol"] == "SOL" and t["message"] == "SOL crossed 240"
+    r = integrations.record_tradingview(store, b'{"symbol":"BYBIT:HYPEUSDT.P","action":"alert","idea":true,"message":"x"}')
+    assert r["parsed"]["symbol"] == "HYPE"
+    assert any(i["symbol"] == "HYPE" for i in store.records("SELECT * FROM ideas"))
+
+
+def test_marketsurge_import_and_leaders(store):
+    from desk import integrations
+    csv_text = "Symbol\tCompany Name\tComposite Rating\tEPS Rating\tRS Rating\tAcc/Dis Rating\tPivot\tBase Pattern\n" \
+               "MSFT\tMicrosoft\t95\t90\t88\tB+\t$1.00\tFlat base\nbad row!!\t\t\t\t\t\t\t\n"
+    r = integrations.import_marketsurge(store, csv_text, "test")
+    assert r["ok"] and r["rows"] == 1
+    m = next(l for l in integrations.leaders(store) if l["symbol"] == "MSFT")
+    assert m["composite"] == 95 and m["rs"] == 88 and m["acc_dis"] == "B+" and m["zone"] == "extended"
+    assert integrations.set_outlook(store, "Market in correction", 20)["ok"]
+    sig = regime.regime(store)["signals"][0]
+    assert sig["name"] == "IBD market outlook" and sig["status"] == "red"

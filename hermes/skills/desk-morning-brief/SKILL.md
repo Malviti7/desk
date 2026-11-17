@@ -25,7 +25,10 @@ what I own?** Everything else is noise until proven otherwise.
 5. For each of the 3 largest positions, check `news_on_book` for headlines that bear
    on the thesis (call `get_news` with the symbol if needed). Only mention a
    headline if it plausibly changes the thesis.
-6. Check `calendar` for events in the next 2 trading days that touch held names or
+6. Leaders (CANSLIM): read `leaders_in_buy_zone` and `tradingview_alerts_24h`. Gate new
+   long ideas on the IBD market outlook (first regime signal): in "Market in correction",
+   say so and do not suggest new breakouts. Call `get_leaders` if you need the full list.
+7. Check `calendar` for events in the next 2 trading days that touch held names or
    rates.
 
 ## Output
@@ -35,6 +38,7 @@ Keep it under 250 words. No em dashes. Format:
 **Regime:** label, plus the one signal that matters most and why.
 **Changed overnight:** at most 3 bullets, each tied to a position or exposure.
 **Book:** P&L, gross/net, buffer before protected spot, worst stress.
+**Leaders:** up to 3 names in the buy zone with Comp/RS and the base, or "none".
 **Today's top 3:** the three things that matter most today.
 **Add if / Cut if:** concrete levels or events for the biggest positions, using the
 stops and targets from theses. If a position has no thesis, say so and suggest one.

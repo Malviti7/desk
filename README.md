@@ -16,9 +16,12 @@ with an MCP server so your Hermes agents (or any MCP client) can use it as nativ
        Web dashboard           REST API /api/*          Telegram alerts
      (http://127.0.0.1:8765)        ▲
                                     │
-                          desk mcp  (MCP server, 20 tools)
+                          desk mcp  (MCP server, 24 tools)
                                     ▲
                         Hermes agents · Claude · anything MCP
+
+   TradingView alerts ──webhook──► /api/webhooks/tradingview/<secret>
+   MarketSurge screens ──CSV/paste──► Leaders tab or import_marketsurge_ratings
 ```
 
 One process (`desk serve`) owns the database and runs the scheduler. The MCP server is a thin
@@ -50,6 +53,8 @@ Jobs with missing keys are marked `skipped` with the reason, everything else sti
 
 | Tab | What's on it |
 |---|---|
+| **Charts** | Live TradingView charts, 1/2/4 panels, intervals 5m to monthly, MarketSurge ratings beside each, open-in-TradingView / open-in-MarketSurge |
+| **Leaders** | IBD market outlook, MarketSurge import, leaders table with buy point distance and zone, chart, TradingView alert feed |
 | **Morning** | Regime check, 1d P&L, gross/net, VaR, buffer before protected spot, alerts, biggest movers, overnight moves, 7-day calendar, crypto crowding, news on your book |
 | **Macro** | Treasury curve vs 1 month ago, rates, net liquidity (Fed BS - TGA - RRP), credit spreads, vol (VIX term structure, MOVE), FX, futures, global indices, commodities, cross-asset correlations, economy, series explorer |
 | **Crypto** | Hyperliquid perps (funding annualized, OI and 24h change, premium, crowding flags), funding/OI history charts, DVOL, stablecoin supply, TVL, trend vs 20/50/200d, crypto equities |
@@ -70,6 +75,43 @@ this is information, not a limit.
 
 If you trade in a portfolio margin / unified account, keep `hyperliquid_unified: true` and check
 that Desk's account value matches the Hyperliquid UI once. If it's off, flip the flag.
+
+## TradingView and MarketSurge
+
+**Live charts.** The **Charts** tab embeds TradingView's Advanced Chart widget (live TradingView
+data) in 1, 2, or 4 panels, with your positions, MarketSurge leaders, watchlist, crypto and macro
+symbols on the left. Any symbol in Portfolio, Crypto, or Leaders opens there with one click (⤢).
+The widget runs without your login, so your saved layouts and Pine scripts aren't in it; the
+**TradingView ↗** button opens the same symbol in your own TradingView. **MarketSurge ↗** does the
+same for MarketSurge. MarketSurge can't be embedded, so its ratings show beside each chart instead.
+
+Crypto symbols map to TradingView with `tradingview.crypto_template` (default
+`BINANCE:{coin}USDT`) plus `symbol_overrides`. If a chart says "invalid symbol", search the coin in
+TradingView and put the exact name in `symbol_overrides`. Check the MarketSurge link once too:
+open a chart in MarketSurge, copy its URL, and set `marketsurge.chart_url` with `{symbol}`.
+
+**TradingView alerts into Desk.**
+1. Set `TV_WEBHOOK_SECRET` in `.env` to a long random string. Restart `desk serve`.
+2. Expose Desk on HTTPS (TradingView only posts to ports 80/443). Easiest:
+   `cloudflared tunnel --url http://127.0.0.1:8765` (or `tailscale funnel 8765`).
+3. In TradingView, turn on 2FA (required for webhooks; any paid plan). In an alert's
+   Notifications, enable Webhook URL: `https://<tunnel-host>/api/webhooks/tradingview/<secret>`
+4. Message (JSON):
+   `{"symbol":"{{ticker}}","action":"buy","price":{{close}},"interval":"{{interval}}","message":"Breakout on volume"}`
+   Add `"idea": true` to also drop it into the Ideas pipeline. Plain text messages work too.
+
+Alerts show on the Leaders tab, in the morning brief, on Telegram, and to agents via
+`get_tradingview_alerts`. Only the webhook path is exposed by the secret; protect the rest with
+`DESK_API_TOKEN` if the tunnel is public.
+
+**MarketSurge ratings.** On the **Leaders** tab, upload a CSV or paste a table from a MarketSurge
+screen or watchlist. Desk maps columns by name (Symbol, Composite, EPS, RS, SMR, Acc/Dis, group
+rank, pattern/base, pivot/buy point) and computes live distance from the buy point: **buy zone**
+(0 to 5% above), **extended**, or **below pivot**. Names in the buy zone with Composite 90+ that
+you don't hold trigger an alert. Set **IBD market outlook** there too; it becomes the first regime
+signal and the morning brief skill won't suggest breakouts in a correction. Agents can do both
+with `import_marketsurge_ratings` and `set_market_outlook`, so you can paste a screen into Hermes.
+This uses only what you export or paste; Desk does not log in to or scrape MarketSurge.
 
 ## Hermes integration
 
@@ -104,9 +146,10 @@ where `hyperliquid.protected_spot_at_risk` is true. The playbooks can pull `get_
 ### MCP tools
 
 `get_morning_brief`, `get_regime`, `get_macro_snapshot`, `get_crypto_snapshot`,
-`get_funding_history`, `get_positioning`, `get_portfolio`, `get_risk_report`, `run_stress_test`
+`get_funding_history`, `get_positioning`, `get_leaders`, `import_marketsurge_ratings`,
+`set_market_outlook`, `get_tradingview_alerts`, `get_portfolio`, `get_risk_report`, `run_stress_test`
 (with what-if positions), `get_news`, `get_calendar`, `get_alerts`, `list_series`, `get_series`,
-`set_thesis`, `add_idea`, `list_ideas`, `notify_user`, `refresh_data`, `get_data_status`.
+`set_thesis`, `add_idea`, `list_ideas`, `notify_user`, `refresh_data`, `get_data_status` (24 total).
 
 Deliberately no order execution. Desk informs; your execution agent or you place trades.
 

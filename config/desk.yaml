@@ -158,6 +158,29 @@ stress_scenarios:
   - {name: "HYPE -40% idiosyncratic", spx: 0.0, btc: 0.0, overrides: {HYPE: -0.40}}
   - {name: "Melt-up", spx: 0.07, btc: 0.20}
 
+# ---------------------------------------------------------------- TRADINGVIEW
+# Webhook URL to paste into TradingView alerts:
+#   https://<your-public-host>/api/webhooks/tradingview/<TV_WEBHOOK_SECRET>
+tradingview:
+  default_interval: "D"
+  # How Desk names crypto on TradingView. Change the exchange if a coin is missing there.
+  crypto_template: "BINANCE:{coin}USDT"
+  symbol_overrides:            # symbol -> exact TradingView symbol (verify in TradingView's search)
+    HYPE: "BYBIT:HYPEUSDT"
+    "^VIX": "CBOE:VIX"
+    "DX-Y.NYB": "TVC:DXY"
+  macro_symbols: ["SPY", "QQQ", "IWM", "TLT", "TVC:DXY", "CBOE:VIX", "TVC:US10Y", "TVC:GOLD"]
+  studies: ["MASimple@tv-basicstudies", "Volume@tv-basicstudies"]
+  chart_url: "https://www.tradingview.com/chart/?symbol={tv_symbol}"
+
+# ---------------------------------------------------------------- MARKETSURGE (IBD)
+marketsurge:
+  # Opens a symbol in MarketSurge. Open any chart in MarketSurge, copy the URL, and put {symbol}
+  # where the ticker is if this default doesn't land on the right page.
+  chart_url: "https://marketsurge.investors.com/mstool?Symbol={symbol}"
+  buy_zone_pct: 5               # "buy zone" = 0 to 5% above the buy point
+  leader_min_composite: 90      # buy-zone alerts only for names at or above this Composite
+
 # ---------------------------------------------------------------- ALERTS
 alerts:
   telegram: true                         # sends only if TELEGRAM_* env vars are set

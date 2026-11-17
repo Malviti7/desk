@@ -77,7 +77,18 @@ def build(store: Store) -> dict:
         "news_on_book": news(store, 15, book_only=True),
         "news_macro": news(store, 15),
         "alerts": alerts(store, 24),
+        "leaders_in_buy_zone": [{k: l.get(k) for k in ("symbol", "composite", "rs", "pattern", "buy_point",
+                                                         "live_price", "dist_to_buy_pct", "held")}
+                                for l in _leaders(store) if l.get("zone") == "buy zone"][:10],
+        "tradingview_alerts_24h": store.records("""SELECT ts::VARCHAR AS ts, symbol, action, price, message
+            FROM tv_alerts WHERE ts >= now()::TIMESTAMP - INTERVAL 24 HOUR ORDER BY ts DESC LIMIT 15"""),
     })
+
+
+def _leaders(store: Store) -> list[dict]:
+    from ..integrations import leaders
+
+    return leaders(store)
 
 
 def _fmt_money(x) -> str:
@@ -114,6 +125,13 @@ def to_markdown(b: dict) -> str:
     if b["calendar"]:
         lines.append("\n*Next 7 days*")
         lines += [f"  {c['date']} {c['name']} {c['detail'] or ''}".rstrip() for c in b["calendar"][:12]]
+    if b.get("leaders_in_buy_zone"):
+        lines.append("\n*Leaders in buy zone*")
+        lines += [f"  {l['symbol']} {l['dist_to_buy_pct']:+.1f}% from {l['buy_point']:g} (Comp {l['composite'] or 0:.0f}, RS {l['rs'] or 0:.0f})"
+                  for l in b["leaders_in_buy_zone"]]
+    if b.get("tradingview_alerts_24h"):
+        lines.append("\n*TradingView alerts (24h)*")
+        lines += [f"  {t['symbol'] or ''} {t['action'] or ''}: {t['message']}" for t in b["tradingview_alerts_24h"][:8]]
     if b["news_on_book"]:
         lines.append("\n*News on your book*")
         lines += [f"  {n['title']} ({n['tags']})" for n in b["news_on_book"][:6]]

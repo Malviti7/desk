@@ -68,6 +68,15 @@ def evaluate(store: Store) -> list[dict]:
                 out.append({"key": f"liq:{l['symbol']}:{today}", "severity": "high", "category": "margin",
                             "message": f"{l['symbol']} is {l['distance_pct']:.1f}% from liquidation ({l['liquidation_px']:.4g})."})
 
+    from .integrations import leaders
+
+    min_comp = float(config.get("marketsurge.leader_min_composite", 90))
+    for l in leaders(store):
+        if l.get("zone") == "buy zone" and (l.get("composite") or 0) >= min_comp and not l.get("held"):
+            out.append({"key": f"buyzone:{l['symbol']}:{today}", "severity": "medium", "category": "leaders",
+                        "message": f"{l['symbol']} in buy zone: {l['dist_to_buy_pct']:+.1f}% from {l['buy_point']:g} "
+                                   f"(Comp {l['composite']:.0f}, RS {l.get('rs') or 0:.0f}, {l.get('pattern') or 'base n/a'})."})
+
     for idea in store.records("SELECT * FROM ideas WHERE status = 'open' AND trigger_px IS NOT NULL"):
         px = risk.price_series(store, idea["symbol"], True)
         if px.empty:

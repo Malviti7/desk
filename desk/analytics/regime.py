@@ -164,6 +164,14 @@ def regime(store: Store) -> dict:
         sigs.append(_sig("Crypto implied vol", st, f"BTC DVOL {dv['value']:.0f} ({w:+.0f}% 1w)",
                          "Jumps in implied vol usually precede or accompany deleveraging."))
 
+    from ..integrations import outlook as ibd_outlook
+
+    o = ibd_outlook(store)
+    if o:
+        exp = f", exposure {o['exposure_pct']:.0f}%" if o.get("exposure_pct") is not None else ""
+        sigs.insert(0, _sig("IBD market outlook", o["color"], f"{o['label']}{exp}",
+                            "IBD's read on market direction from distribution days and follow-throughs."))
+
     reds = sum(s["status"] == RED for s in sigs)
     ambers = sum(s["status"] == AMBER for s in sigs)
     if not sigs:
