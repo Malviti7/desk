@@ -3,19 +3,21 @@ name: desk-risk-check
 description: Pre-trade and portfolio risk check against the Desk. Use before proposing or placing any trade, when asked "can I add X", "what happens if BTC drops 20%", "how much room do I have", or when an alert fires on margin, liquidation distance, or protected spot.
 ---
 
+> Tool names below come from the Desk Hermes plugin. If you connected Desk over MCP instead, use the matching MCP tool (e.g. `desk_portfolio` is `get_portfolio`, `desk_stress_test` is `run_stress_test`).
+
 # Desk risk check
 
 ## For a proposed trade
 
-1. `get_portfolio` for current positions, exposures, and the Hyperliquid block.
-2. `run_stress_test` with `add_positions=[{symbol, notional, asset_class}]` and zero
+1. `desk_portfolio` for current positions, exposures, and the Hyperliquid block.
+2. `desk_stress_test` with `add_positions=[{symbol, notional, asset_class}]` and zero
    shocks. Report the new perp gross, margin headroom, and buffer before protected spot.
 3. Run it again with the proposed position under each configured stress scenario that
-   matters for it (call `get_risk_report` to see the scenario list), at minimum
+   matters for it (call `desk_risk_report` to see the scenario list), at minimum
    `btc_pct=-0.25` for crypto and `spx_pct=-0.10` for equities.
-4. Check `get_crypto_snapshot` for the coin's funding and crowding. Entering a crowded
+4. Check `desk_crypto` for the coin's funding and crowding. Entering a crowded
    side (funding above 50% annualized for longs) is worth flagging.
-5. Check correlation in `get_risk_report`: does the new position add to an exposure
+5. Check correlation in `desk_risk_report`: does the new position add to an exposure
    the book already has?
 
 Answer with: the trade, the margin state after, the worst stress P&L, whether
@@ -29,10 +31,10 @@ positive in the "Crypto crash" scenario. The user decides; you inform. No em das
   opposite notional).
 - Protected spot: this is the highest priority alert. Lead with it, state the buffer,
   and show the smallest perp reduction that makes the buffer positive again.
-- Stop breached or near: restate the thesis from `get_portfolio` and ask whether it
+- Stop breached or near: restate the thesis from `desk_portfolio` and ask whether it
   still holds. Do not move a stop without the user saying so.
 
 ## Recording decisions
 
-When the user states a thesis, stop, or target, save it with `set_thesis`. When they
-mention a level they would act at, save it with `add_idea` and a trigger.
+When the user states a thesis, stop, or target, save it with `desk_set_thesis`. When they
+mention a level they would act at, save it with `desk_add_idea` and a trigger.

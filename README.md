@@ -115,33 +115,44 @@ This uses only what you export or paste; Desk does not log in to or scrape Marke
 
 ## Hermes integration
 
+Desk ships as a **Hermes plugin** in `hermes/desk-plugin/`. It registers 25 native `desk_*` tools,
+the three skills, and a `/desk` command. No MCP setup needed. The plugin is a thin HTTP client
+(standard library only), so `desk serve` must be running on the same machine or at `DESK_URL`.
+
 ```bash
-# 1. Give Hermes the tools (stdio; Hermes launches the process)
-hermes mcp add desk --command "desk mcp"
-hermes mcp test desk
-
-# 2. Install the skills
-cp -r hermes/skills/* ~/.hermes/skills/
-
-# 3. Schedule the routine (check `hermes cron create --help` for delivery flags on your version)
-hermes cron create "0 7 * * 1-5"      # prompt: "Run the desk-morning-brief skill"
-hermes cron create "0 10-16/2 * * 1-5" # prompt: "Run the desk-regime-watch skill"
+hermes plugins install Malviti7/desk/hermes/desk-plugin --enable
+hermes plugins list                    # desk should show as enabled
 ```
 
-For an agent on another machine: run `desk mcp --http --host 0.0.0.0 --port 8766`, set
-`DESK_API_TOKEN` in `.env`, and add it with `hermes mcp add desk --url http://<host>:8766/mcp`.
-Put it behind Tailscale or similar rather than the open internet.
+In Hermes Desktop: Capabilities > Plugins > Install from Git, and use the same path
+(`https://github.com/Malviti7/desk/tree/main/hermes/desk-plugin` if the dialog wants a URL). If the
+dialog won't take a subfolder, use the CLI command above. To update later: `hermes plugins update desk`.
 
-**Skills included** (`hermes/skills/`):
+Set `DESK_URL` (default `http://127.0.0.1:8765`) and `DESK_API_TOKEN` in Hermes's environment only
+if Desk runs elsewhere or you protected the API.
+
+**Skills** (loaded as `desk:desk-morning-brief` etc.):
 
 - `desk-morning-brief`: the full PM morning routine, ends with "today's top 3" and "add if / cut if".
 - `desk-risk-check`: pre-trade check using what-if positions, plus playbooks for margin and protected-spot alerts.
 - `desk-regime-watch`: intraday watch that only speaks when something changed.
 
+**Schedule the routine** (check `hermes cron create --help` for delivery flags on your version):
+
+```bash
+hermes cron create "0 7 * * 1-5"       # prompt: "Run the desk:desk-morning-brief skill"
+hermes cron create "0 10-16/2 * * 1-5" # prompt: "Run the desk:desk-regime-watch skill"
+```
+
+**Alternative: MCP.** Any MCP client (Claude, Cursor, a second Hermes profile) can use
+`hermes mcp add desk --command "desk mcp"`, or `desk mcp --http --port 8766` for remote agents.
+Same tools under their MCP names (below). Use the plugin or MCP in Hermes, not both.
+
 **Wiring into your trading agent.** Your RiskEngine can call `POST /api/stress` with
 `{"add": [{"symbol": "SOL", "notional": -50000}], "btc": -0.25}` before any order and reject trades
-where `hyperliquid.protected_spot_at_risk` is true. The playbooks can pull `get_positioning`
-(COT, short interest, 13F), `get_crypto_snapshot` (funding, OI) and `get_calendar` (catalysts).
+where `hyperliquid.protected_spot_at_risk` is true. The playbooks can use `desk_positioning`
+(COT, short interest, 13F), `desk_cross_venue` (funding, OI, liquidations), `desk_leaders`
+(CANSLIM) and `desk_calendar` (catalysts).
 
 ### MCP tools
 

@@ -1,0 +1,35 @@
+name: desk
+version: "0.2.0"
+description: >-
+  Personal trading desk for Hermes: macro regime, cross-asset data, cross-venue crypto
+  derivatives, TradingView alerts, MarketSurge leaders, portfolio and risk across Hyperliquid,
+  Coinbase and manual accounts, stress tests with protected-spot checks, news and calendar.
+  Talks to a running Desk server (`desk serve`, see the repo README). Read-mostly: no order execution.
+author: Malviti7
+homepage: https://github.com/Malviti7/desk
+provides_tools:
+  - desk_morning_brief
+  - desk_regime
+  - desk_macro
+  - desk_crypto
+  - desk_cross_venue
+  - desk_funding_history
+  - desk_positioning
+  - desk_leaders
+  - desk_portfolio
+  - desk_risk_report
+  - desk_stress_test
+  - desk_news
+  - desk_calendar
+  - desk_alerts
+  - desk_tradingview_alerts
+  - desk_list_series
+  - desk_series
+  - desk_set_thesis
+  - desk_add_idea
+  - desk_list_ideas
+  - desk_set_market_outlook
+  - desk_import_marketsurge
+  - desk_notify
+  - desk_refresh_data
+  - desk_data_status

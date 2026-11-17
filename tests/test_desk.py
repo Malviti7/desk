@@ -142,3 +142,24 @@ def test_coinalyze_with_mocked_api(monkeypatch):
     # Binance 0.01%/8h -> 10.95%/yr ; Hyperliquid 0.00125%/1h -> 10.95%/yr
     assert x["funding_ann_oiw"] == pytest.approx(10.95, abs=0.01)
     assert x["liq_long_24h"] == 5e6 and x["liq_skew"] == "longs flushed"
+
+
+def test_hermes_plugin_registers():
+    import importlib.util
+    from pathlib import Path
+    import yaml
+    root = Path(__file__).resolve().parent.parent / "hermes" / "desk-plugin"
+    spec = importlib.util.spec_from_file_location("deskplugin", root / "__init__.py")
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+
+    class Ctx:
+        tools, skills = {}, {}
+        def register_tool(self, name, toolset, schema, handler): self.tools[name] = schema
+        def register_skill(self, name, path): self.skills[name] = path
+
+    c = Ctx()
+    m.register(c)
+    assert set(c.tools) == set(yaml.safe_load(open(root / "plugin.yaml"))["provides_tools"])
+    assert set(c.skills) == {"desk-morning-brief", "desk-regime-watch", "desk-risk-check"}
+    assert all(s["parameters"]["type"] == "object" for s in c.tools.values())
