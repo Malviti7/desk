@@ -1,0 +1,10 @@
+.env
+data/*.duckdb*
+data/*.wal
+config/positions.csv
+__pycache__/
+*.egg-info/
+.venv/
+web/node_modules/
+web/dist/
+.pytest_cache/

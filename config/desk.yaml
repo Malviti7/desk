@@ -1,0 +1,167 @@
+# Desk configuration. Edit freely; restart `desk serve` to apply.
+
+server:
+  host: 127.0.0.1
+  port: 8765
+  db_path: data/desk.duckdb
+
+# How often each ingest job runs (minutes). Set to 0 to disable a job.
+schedule:
+  fred: 360
+  fred_calendar: 720
+  yahoo: 30
+  hyperliquid_market: 15
+  hyperliquid_account: 5
+  hyperliquid_candles: 360
+  deribit: 60
+  defillama: 360
+  cftc: 1440
+  earnings: 720
+  short_interest: 1440
+  sec_13f: 10080
+  news: 15
+  coinbase: 15
+  manual_positions: 15
+  alerts: 5
+
+# ---------------------------------------------------------------- MACRO
+fred_series:
+  # id: [name, category, unit]
+  DGS3MO: ["3M Treasury", rates, "%"]
+  DGS2: ["2Y Treasury", rates, "%"]
+  DGS10: ["10Y Treasury", rates, "%"]
+  DGS30: ["30Y Treasury", rates, "%"]
+  T10Y2Y: ["2s10s Curve", rates, "%"]
+  T10Y3M: ["3m10y Curve", rates, "%"]
+  DFII10: ["10Y Real Yield (TIPS)", rates, "%"]
+  T10YIE: ["10Y Breakeven Inflation", rates, "%"]
+  DFF: ["Effective Fed Funds", rates, "%"]
+  DFEDTARU: ["Fed Funds Target (Upper)", rates, "%"]
+  SOFR: ["SOFR", rates, "%"]
+  WALCL: ["Fed Balance Sheet", liquidity, "$mm"]
+  RRPONTSYD: ["Reverse Repo (ON RRP)", liquidity, "$bn"]
+  WTREGEN: ["Treasury General Account", liquidity, "$mm"]
+  WRESBAL: ["Bank Reserves", liquidity, "$mm"]
+  BAMLH0A0HYM2: ["High Yield OAS", credit, "%"]
+  BAMLC0A0CM: ["Investment Grade OAS", credit, "%"]
+  NFCI: ["Chicago Fed Financial Conditions", credit, "z"]
+  DTWEXBGS: ["Broad Dollar Index", fx, "index"]
+  ICSA: ["Initial Jobless Claims", economy, "claims"]
+  UNRATE: ["Unemployment Rate", economy, "%"]
+  CPIAUCSL: ["CPI", economy, "index"]
+
+# FRED release names to show on the calendar (substring match)
+calendar_releases:
+  - Employment Situation
+  - Consumer Price Index
+  - Producer Price Index
+  - Gross Domestic Product
+  - Personal Income and Outlays
+  - Advance Monthly Sales for Retail
+  - Unemployment Insurance Weekly Claims
+  - Job Openings and Labor Turnover
+  - ISM
+  - University of Michigan
+
+# Market data from Yahoo Finance (free, delayed, unofficial)
+yahoo:
+  futures: {"ES=F": "S&P 500 Fut", "NQ=F": "Nasdaq 100 Fut", "RTY=F": "Russell 2000 Fut", "ZN=F": "10Y Note Fut"}
+  indices: {"^GSPC": "S&P 500", "^NDX": "Nasdaq 100", "^N225": "Nikkei 225", "^HSI": "Hang Seng", "^STOXX50E": "Euro Stoxx 50"}
+  vol: {"^VIX9D": "VIX 9D", "^VIX": "VIX", "^VIX3M": "VIX 3M", "^VIX6M": "VIX 6M", "^MOVE": "MOVE"}
+  fx: {"DX-Y.NYB": "DXY", "USDJPY=X": "USDJPY", "EURUSD=X": "EURUSD", "CNH=X": "USDCNH"}
+  commodities: {"CL=F": "WTI Crude", "HG=F": "Copper", "GC=F": "Gold", "NG=F": "Nat Gas"}
+  credit: {"HYG": "HY Bond ETF", "LQD": "IG Bond ETF", "TLT": "20Y+ Treasury ETF"}
+  factors: {"SPY": "S&P 500", "MTUM": "Momentum", "VLUE": "Value", "QUAL": "Quality", "USMV": "Min Vol", "IWM": "Small Cap"}
+  sectors: {"XLK": "Tech", "XLF": "Financials", "XLE": "Energy", "XLV": "Health Care", "XLI": "Industrials", "XLY": "Cons Disc", "XLP": "Cons Staples", "XLU": "Utilities", "XLB": "Materials", "XLRE": "Real Estate", "XLC": "Comm Svcs"}
+  crypto_equities: {"IBIT": "BTC ETF (IBIT)", "ETHA": "ETH ETF (ETHA)", "COIN": "Coinbase", "MSTR": "Strategy"}
+
+# FOMC decision dates (update yearly from federalreserve.gov)
+fomc_dates: ["2026-01-28", "2026-03-18", "2026-04-29", "2026-06-17", "2026-07-29", "2026-09-16", "2026-10-28", "2026-12-09"]
+
+# Anything else you want on the calendar: token unlocks, expiries, conferences
+manual_events:
+  # - {date: "2026-11-28", kind: crypto, name: "Deribit monthly expiry"}
+
+# CFTC Commitments of Traders (legacy futures), by contract market code
+cftc_markets:
+  "13874A": "E-mini S&P 500"
+  "209742": "Nasdaq 100 Mini"
+  "043602": "10Y T-Note"
+  "042601": "2Y T-Note"
+  "099741": "Euro FX"
+  "097741": "Japanese Yen"
+  "067651": "WTI Crude"
+  "088691": "Gold"
+  "085692": "Copper"
+  "133741": "Bitcoin (CME)"
+  "146021": "Ether (CME)"
+  "1170E1": "VIX Futures"
+
+# 13F filers to track for crowding (CIK numbers). Add funds you care about.
+sec_13f_filers:
+  "0001350694": "Bridgewater"
+  "0001037389": "Renaissance"
+  "0001423053": "Citadel Advisors"
+  "0001067983": "Berkshire Hathaway"
+  "0001649339": "Millennium"
+
+# ---------------------------------------------------------------- CRYPTO
+crypto:
+  watch: [BTC, ETH, SOL, HYPE]          # always shown on the crypto screen
+  top_n_by_oi: 25                        # also track the top N perps by OI
+  dvol: [BTC, ETH]
+  funding_hot_annualized: 0.50           # flag crowded longs above this
+  funding_cold_annualized: -0.20         # flag crowded shorts below this
+
+# ---------------------------------------------------------------- EQUITIES
+equities:
+  watchlist: [NVDA, MSFT, AAPL, AMZN, META, GOOGL, TSLA, COIN, MSTR, HOOD]
+  earnings_min_market_cap: 50000000000   # show earnings for large caps even if not held
+
+# ---------------------------------------------------------------- NEWS
+news:
+  feeds:
+    Fed: https://www.federalreserve.gov/feeds/press_all.xml
+    ECB: https://www.ecb.europa.eu/rss/press.html
+    SEC: https://www.sec.gov/news/pressreleases.rss
+    CoinDesk: https://www.coindesk.com/arc/outboundfeeds/rss/
+    Decrypt: https://decrypt.co/feed
+  google_news_queries:
+    - "Federal Reserve rates"
+    - "Treasury yields"
+    - "Bank of Japan"
+    - "tariffs"
+    - "crypto regulation"
+    - "Hyperliquid"
+  include_position_queries: true         # auto-add a Google News query per held symbol
+  max_age_hours: 72
+
+# ---------------------------------------------------------------- PORTFOLIO & RISK
+portfolio:
+  manual_csv: config/positions.csv
+  protected_spot: [HYPE]                 # spot you never want put at risk by perp losses
+  hyperliquid_unified: true              # portfolio margin / unified account: stables already in perp equity.
+                                         # Check that Desk's account value matches the Hyperliquid UI.
+  margin_headroom_warn: 0.30             # warn when (equity - maint) / equity falls below this
+  liq_distance_warn: 0.15                # warn when a position is within 15% of liquidation
+  stop_proximity_warn: 0.02              # warn when price is within 2% of a stop
+  adv_participation: 0.20                # days-to-exit assumes you trade 20% of daily volume
+  var_lookback_days: 250
+
+# Stress scenarios. Shocks apply via beta to SPX (equities) and BTC (crypto).
+# `overrides` sets a direct % move for a specific symbol.
+stress_scenarios:
+  - {name: "Equity selloff", spx: -0.10, btc: -0.15}
+  - {name: "Crypto crash", spx: -0.03, btc: -0.25}
+  - {name: "Crypto wipeout", spx: -0.05, btc: -0.40}
+  - {name: "Rates shock +50bp", spx: -0.04, btc: -0.08, overrides: {TLT: -0.08}}
+  - {name: "HYPE -40% idiosyncratic", spx: 0.0, btc: 0.0, overrides: {HYPE: -0.40}}
+  - {name: "Melt-up", spx: 0.07, btc: 0.20}
+
+# ---------------------------------------------------------------- ALERTS
+alerts:
+  telegram: true                         # sends only if TELEGRAM_* env vars are set
+  vix_backwardation: 1.0                 # VIX / VIX3M above this
+  hy_oas_weekly_widening_bp: 25
+  usdjpy_weekly_drop_pct: 2.0
+  btc_dvol_jump_pct: 20

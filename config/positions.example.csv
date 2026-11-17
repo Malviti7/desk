@@ -1,0 +1,5 @@
+account,symbol,asset_class,qty,entry_px,price_source
+ibkr,NVDA,equity,100,120.50,yahoo
+ibkr,TLT,etf,-200,92.10,yahoo
+cold-wallet,BTC,crypto_spot,0.5,61000,hyperliquid
+cold-wallet,ETH,crypto_spot,4,2400,hyperliquid

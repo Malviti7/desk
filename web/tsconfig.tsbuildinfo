@@ -1,0 +1,1 @@
+{"root":["./src/api.ts","./src/fmt.ts","./src/main.tsx","./src/components/ui.tsx","./src/pages/Crypto.tsx","./src/pages/Equities.tsx","./src/pages/Macro.tsx","./src/pages/Morning.tsx","./src/pages/Other.tsx","./src/pages/Portfolio.tsx","./src/pages/Risk.tsx"],"version":"5.9.3"}
