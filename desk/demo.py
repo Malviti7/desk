@@ -178,6 +178,30 @@ def seed(store: Store, days: int = 520) -> None:
                 hrows.append({"cik": cik, "fund": fund, "period": date(2026, 9, 30), "issuer": iss, "cusip": iss[:9],
                               "value_usd": RNG.uniform(1e8, 5e9), "shares": RNG.uniform(1e5, 1e7)})
     store.insert_df("holdings_13f", pd.DataFrame(hrows))
+    # Coinalyze-style cross-venue snapshots (now and ~24h ago) and daily history
+    venues = [("Binance", 8, 0.45), ("Bybit", 8, 0.22), ("OKX", 8, 0.13), ("Hyperliquid", 1, 0.20)]
+    base_oi = {"BTC": 6.2e10, "ETH": 3.1e10, "SOL": 7.5e9, "HYPE": 2.4e9}
+    fund8h = {"BTC": 0.008, "ETH": 0.009, "SOL": 0.018, "HYPE": 0.035}
+    xrows = []
+    for back, growth in ((24, 0.96), (0, 1.0)):
+        ts = now - timedelta(hours=back)
+        for c, tot in base_oi.items():
+            for ex, hrs, share in venues:
+                f = fund8h[c] * (1 + RNG.normal(0, 0.2)) * hrs / 8
+                xrows.append({"ts": ts, "coin": c, "exchange": ex, "symbol": f"{c}USDT_PERP.{ex[0]}",
+                              "oi_usd": tot * share * growth, "funding_pct": f, "predicted_funding_pct": f * 1.05,
+                              "funding_ann": f / 100 * (24 / hrs) * 365,
+                              "liq_long_24h": tot * share * RNG.uniform(0.0005, 0.003),
+                              "liq_short_24h": tot * share * RNG.uniform(0.0003, 0.0015)})
+    store.insert_df("xvenue_snapshots", pd.DataFrame(xrows))
+    for c, tot in base_oi.items():
+        oi = pd.Series(_walk(1, len(cidx), 0.03), index=cidx)
+        store.upsert_series(f"cz:{c}:oi_usd", oi / oi.iloc[-1] * tot, "demo", f"{c} OI, all venues", "crypto_derivs", "$")
+        store.upsert_series(f"cz:{c}:funding_ann", pd.Series(np.clip(_rate(fund8h[c] * 3 * 365, len(cidx), 150), -20, 80), index=cidx),
+                            "demo", f"{c} OI-weighted funding (ann %)", "crypto_derivs", "pct")
+        store.upsert_series(f"cz:{c}:liq_long", pd.Series(RNG.gamma(1.5, tot * 0.001, len(cidx)), index=cidx), "demo", f"{c} long liquidations", "crypto_derivs", "$")
+        store.upsert_series(f"cz:{c}:liq_short", pd.Series(RNG.gamma(1.5, tot * 0.0007, len(cidx)), index=cidx), "demo", f"{c} short liquidations", "crypto_derivs", "$")
+
     # MarketSurge-style ratings and IBD outlook
     pats = ["Cup with handle", "Flat base", "Double bottom", "Ascending base", "Cup without handle", "Base on base"]
     mrows = []

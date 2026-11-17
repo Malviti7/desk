@@ -75,6 +75,11 @@ CREATE TABLE IF NOT EXISTS alerts (
   key VARCHAR PRIMARY KEY, ts TIMESTAMP, severity VARCHAR,
   category VARCHAR, message VARCHAR, sent BOOLEAN
 );
+CREATE TABLE IF NOT EXISTS xvenue_snapshots (
+  ts TIMESTAMP, coin VARCHAR, exchange VARCHAR, symbol VARCHAR, oi_usd DOUBLE,
+  funding_pct DOUBLE, predicted_funding_pct DOUBLE, funding_ann DOUBLE,
+  liq_long_24h DOUBLE, liq_short_24h DOUBLE
+);
 CREATE SEQUENCE IF NOT EXISTS tv_seq START 1;
 CREATE TABLE IF NOT EXISTS tv_alerts (
   id INTEGER PRIMARY KEY, ts TIMESTAMP, symbol VARCHAR, action VARCHAR, price DOUBLE,

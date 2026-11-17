@@ -87,6 +87,11 @@ def get_funding(coin: str, days: int = 14) -> list[dict]:
     return crypto.funding_history(store(), coin.upper(), days)
 
 
+@app.get("/api/crypto/venues", dependencies=[api])
+def get_venues(coin: str | None = None) -> list[dict]:
+    return crypto.cross_venue(store(), coin)
+
+
 @app.get("/api/equities", dependencies=[api])
 def get_equities() -> dict:
     return positioning.snapshot(store())

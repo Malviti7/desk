@@ -107,3 +107,38 @@ def test_marketsurge_import_and_leaders(store):
     assert integrations.set_outlook(store, "Market in correction", 20)["ok"]
     sig = regime.regime(store)["signals"][0]
     assert sig["name"] == "IBD market outlook" and sig["status"] == "red"
+
+
+def test_coinalyze_with_mocked_api(monkeypatch):
+    import time as _t
+    from desk.sources import coinalyze
+    from desk.analytics import crypto as cr
+
+    s = Store(":memory:")
+    monkeypatch.setenv("COINALYZE_API_KEY", "x")
+    now = int(_t.time())
+    markets = [
+        {"symbol": "BTCUSDT_PERP.A", "exchange": "A", "base_asset": "BTC", "quote_asset": "USDT", "is_perpetual": True},
+        {"symbol": "BTCUSD_PERP.H", "exchange": "H", "base_asset": "BTC", "quote_asset": "USD", "is_perpetual": True},
+        {"symbol": "BTCUSD_PERP.A", "exchange": "A", "base_asset": "BTC", "quote_asset": "USD", "is_perpetual": True},
+        {"symbol": "DOGEUSDT_PERP.A", "exchange": "A", "base_asset": "DOGE", "quote_asset": "USDT", "is_perpetual": True},
+        {"symbol": "BTCUSDT.A", "exchange": "A", "base_asset": "BTC", "quote_asset": "USDT", "is_perpetual": False},
+    ]
+    data = {
+        "exchanges": [{"code": "A", "name": "Binance"}, {"code": "H", "name": "Hyperliquid"}],
+        "future-markets": markets,
+        "open-interest": [{"symbol": "BTCUSDT_PERP.A", "value": 6e9}, {"symbol": "BTCUSD_PERP.H", "value": 2e9}],
+        "funding-rate": [{"symbol": "BTCUSDT_PERP.A", "value": 0.01}, {"symbol": "BTCUSD_PERP.H", "value": 0.00125}],
+        "predicted-funding-rate": [{"symbol": "BTCUSDT_PERP.A", "value": 0.012}],
+        "liquidation-history": [{"symbol": "BTCUSDT_PERP.A", "history": [{"t": now - 3600, "l": 5e6, "s": 1e6}]}],
+    }
+    monkeypatch.setattr(coinalyze, "_get", lambda path, params=None, cost=1: data[path])
+    monkeypatch.setattr(coinalyze, "coins", lambda store: ["BTC"])
+    picked = coinalyze.markets(s)
+    assert {m["symbol"] for m in picked} == {"BTCUSDT_PERP.A", "BTCUSD_PERP.H"}  # USDT preferred, spot/other coins excluded
+    assert coinalyze.run(s) == 2
+    x = cr.cross_venue(s, "BTC")[0]
+    assert x["oi_usd"] == 8e9 and x["hyperliquid_share"] == 25.0
+    # Binance 0.01%/8h -> 10.95%/yr ; Hyperliquid 0.00125%/1h -> 10.95%/yr
+    assert x["funding_ann_oiw"] == pytest.approx(10.95, abs=0.01)
+    assert x["liq_long_24h"] == 5e6 and x["liq_skew"] == "longs flushed"

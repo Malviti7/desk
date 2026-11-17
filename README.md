@@ -5,8 +5,8 @@ with an MCP server so your Hermes agents (or any MCP client) can use it as nativ
 
 ```
              ┌──────────── data sources (scheduled) ────────────┐
-             │ FRED · Yahoo · Hyperliquid · Deribit · DefiLlama │
-             │ CFTC · Nasdaq · SEC EDGAR · RSS · Coinbase · CSV │
+             │ FRED · Yahoo · Hyperliquid · Coinalyze · Deribit │
+             │ DefiLlama · CFTC · Nasdaq · SEC · RSS · Coinbase │
              └──────────────────────┬───────────────────────────┘
                                     ▼
    desk serve ──►  DuckDB  ──►  analytics (regime, crypto, positioning, risk, brief, alerts)
@@ -16,7 +16,7 @@ with an MCP server so your Hermes agents (or any MCP client) can use it as nativ
        Web dashboard           REST API /api/*          Telegram alerts
      (http://127.0.0.1:8765)        ▲
                                     │
-                          desk mcp  (MCP server, 24 tools)
+                          desk mcp  (MCP server, 25 tools)
                                     ▲
                         Hermes agents · Claude · anything MCP
 
@@ -57,7 +57,7 @@ Jobs with missing keys are marked `skipped` with the reason, everything else sti
 | **Leaders** | IBD market outlook, MarketSurge import, leaders table with buy point distance and zone, chart, TradingView alert feed |
 | **Morning** | Regime check, 1d P&L, gross/net, VaR, buffer before protected spot, alerts, biggest movers, overnight moves, 7-day calendar, crypto crowding, news on your book |
 | **Macro** | Treasury curve vs 1 month ago, rates, net liquidity (Fed BS - TGA - RRP), credit spreads, vol (VIX term structure, MOVE), FX, futures, global indices, commodities, cross-asset correlations, economy, series explorer |
-| **Crypto** | Hyperliquid perps (funding annualized, OI and 24h change, premium, crowding flags), funding/OI history charts, DVOL, stablecoin supply, TVL, trend vs 20/50/200d, crypto equities |
+| **Crypto** | Cross-venue OI, OI-weighted funding, venue funding spread, liquidations and Hyperliquid share (Coinalyze), with per-venue drilldown and 180-day history; Hyperliquid perps (funding annualized, OI and 24h change, premium, crowding flags), funding/OI history charts, DVOL, stablecoin supply, TVL, trend vs 20/50/200d, crypto equities |
 | **Equities** | Sector, index and factor performance, CFTC COT with 3y percentiles, short interest, 13F crowding |
 | **Portfolio** | All positions across Hyperliquid, Coinbase and CSV with betas, days to exit, stop/target distance; Hyperliquid margin, liquidation distances, equity curve; exposures; thesis editor |
 | **Risk** | Historical VaR/ES, hypothetical daily P&L of the current book, stress scenarios with Hyperliquid margin impact, custom stress, factor exposures, liquidity, correlation matrix, stops |
@@ -147,9 +147,9 @@ where `hyperliquid.protected_spot_at_risk` is true. The playbooks can pull `get_
 
 `get_morning_brief`, `get_regime`, `get_macro_snapshot`, `get_crypto_snapshot`,
 `get_funding_history`, `get_positioning`, `get_leaders`, `import_marketsurge_ratings`,
-`set_market_outlook`, `get_tradingview_alerts`, `get_portfolio`, `get_risk_report`, `run_stress_test`
+`set_market_outlook`, `get_tradingview_alerts`, `get_cross_venue`, `get_portfolio`, `get_risk_report`, `run_stress_test`
 (with what-if positions), `get_news`, `get_calendar`, `get_alerts`, `list_series`, `get_series`,
-`set_thesis`, `add_idea`, `list_ideas`, `notify_user`, `refresh_data`, `get_data_status` (24 total).
+`set_thesis`, `add_idea`, `list_ideas`, `notify_user`, `refresh_data`, `get_data_status` (25 total).
 
 Deliberately no order execution. Desk informs; your execution agent or you place trades.
 
@@ -163,6 +163,7 @@ Deliberately no order execution. Desk informs; your execution agent or you place
 | Release calendar (CPI, NFP, PCE, GDP...) | FRED | Free | same |
 | Futures, indices, VIX curve, MOVE, FX, commodities, ETFs, factors, sectors, equities | Yahoo Finance via yfinance | Free, delayed, unofficial | none |
 | Perp prices, funding, OI, candles, your positions and margin | Hyperliquid info API | Free | `HYPERLIQUID_ADDRESS` (public) |
+| Cross-exchange OI, funding, predicted funding, liquidations (Binance, Bybit, OKX, Hyperliquid, Bitget, Deribit) | Coinalyze | Free, 40 calls/min | `COINALYZE_API_KEY` |
 | BTC / ETH implied vol (DVOL) | Deribit | Free | none |
 | Stablecoin supply, DeFi TVL | DefiLlama | Free | none |
 | Futures positioning (COT) | CFTC | Free | none |
@@ -170,6 +171,12 @@ Deliberately no order execution. Desk informs; your execution agent or you place
 | 13F holdings | SEC EDGAR | Free | `SEC_USER_AGENT` |
 | News | Fed, ECB, SEC, CoinDesk, Decrypt RSS + Google News | Free | none |
 | Coinbase balances | Coinbase Advanced Trade | Free | view-only key |
+
+**Coinalyze notes.** Each run takes 2 to 4 minutes because of the 40 calls/min limit, so it
+runs every 30 minutes and covers `crypto.watch` plus coins you hold (max 10). Funding is
+annualized using `coinalyze.funding_interval_hours` (Hyperliquid 1h, others 8h); check it against
+a venue once. `coinalyze_history` backfills a year of daily OI, funding and liquidations into
+series `cz:<COIN>:*`.
 
 **Upgrades worth paying for later:** Polygon or Tiingo for reliable real-time equities (replaces
 yfinance), Coinglass or Velo for cross-venue funding/OI/liquidations, Financial Modeling Prep for

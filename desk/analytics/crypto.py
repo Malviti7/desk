@@ -58,6 +58,49 @@ def trend(store: Store, coin: str) -> dict | None:
     return out
 
 
+def cross_venue(store: Store, coin: str | None = None) -> list[dict]:
+    """Coinalyze cross-exchange view per coin, from the latest snapshot plus one ~24h earlier."""
+    latest = store.query("SELECT * FROM xvenue_snapshots WHERE ts = (SELECT max(ts) FROM xvenue_snapshots)")
+    if latest.empty:
+        return []
+    ts = latest["ts"].iloc[0]
+    prev = store.query("""SELECT coin, sum(oi_usd) AS oi_prev FROM xvenue_snapshots
+                          WHERE ts = (SELECT max(ts) FROM xvenue_snapshots WHERE ts <= ?::TIMESTAMP - INTERVAL 23 HOUR)
+                          GROUP BY coin""", [ts])
+    prev_map = dict(zip(prev.get("coin", []), prev.get("oi_prev", [])))
+    hot, cold = config.get("crypto.funding_hot_annualized", 0.5), config.get("crypto.funding_cold_annualized", -0.2)
+    out = []
+    for c, g in latest.groupby("coin"):
+        if coin and c != coin.upper():
+            continue
+        g = g.fillna({"oi_usd": 0.0})
+        total = float(g["oi_usd"].sum())
+        fw = g.dropna(subset=["funding_ann"])
+        w_ann = float((fw["funding_ann"] * fw["oi_usd"]).sum() / fw["oi_usd"].sum()) if fw["oi_usd"].sum() else None
+        venues = [{"exchange": r.exchange, "symbol": r.symbol, "oi_usd": r.oi_usd,
+                   "oi_share": r.oi_usd / total * 100 if total else None,
+                   "funding_ann": r.funding_ann * 100 if r.funding_ann is not None and r.funding_ann == r.funding_ann else None,
+                   "predicted_funding_pct": r.predicted_funding_pct,
+                   "liq_long_24h": r.liq_long_24h, "liq_short_24h": r.liq_short_24h}
+                  for r in g.sort_values("oi_usd", ascending=False).itertuples()]
+        anns = [v["funding_ann"] for v in venues if v["funding_ann"] is not None]
+        ll, ls = float(g["liq_long_24h"].sum()), float(g["liq_short_24h"].sum())
+        po = prev_map.get(c)
+        out.append({
+            "coin": c, "as_of": str(ts), "oi_usd": total,
+            "oi_chg_24h": (total / po - 1) * 100 if po else None,
+            "funding_ann_oiw": w_ann * 100 if w_ann is not None else None,
+            "funding_dispersion": (max(anns) - min(anns)) if len(anns) > 1 else None,
+            "liq_long_24h": ll, "liq_short_24h": ls,
+            "liq_skew": "longs flushed" if ll > 2 * ls and ll > 0 else "shorts squeezed" if ls > 2 * ll and ls > 0 else "",
+            "crowding": ("crowded long" if w_ann is not None and w_ann >= hot else
+                         "crowded short" if w_ann is not None and w_ann <= cold else ""),
+            "hyperliquid_share": next((v["oi_share"] for v in venues if "hyperliquid" in v["exchange"].lower()), None),
+            "venues": venues,
+        })
+    return clean(sorted(out, key=lambda x: -x["oi_usd"]))
+
+
 def snapshot(store: Store) -> dict:
     p = perps(store)
     total_oi = sum(r["oi_usd"] for r in p) if p else None
@@ -73,6 +116,7 @@ def snapshot(store: Store) -> dict:
         "perps": p, "total_oi_usd": total_oi, "oi_weighted_funding_ann": oi_weighted_funding,
         "crowded": [r for r in p if r["crowding"]], "implied_vol": vol, "flows": flows,
         "crypto_equities": etf, "trends": trends,
+        "cross_venue": cross_venue(store),
     })
 
 

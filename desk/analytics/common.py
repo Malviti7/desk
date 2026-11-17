@@ -9,7 +9,7 @@ import pandas as pd
 from ..store import Store
 
 RATE_UNITS = {"%", "bp"}
-ABS_UNITS = {"corr", "z"}  # changes shown as absolute difference
+ABS_UNITS = {"corr", "z", "pct"}  # changes shown as absolute difference
 
 
 def clean(x: Any) -> Any:

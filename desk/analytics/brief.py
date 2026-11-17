@@ -70,6 +70,7 @@ def build(store: Store) -> dict:
         },
         "crypto": {
             "oi_weighted_funding_ann": cs.get("oi_weighted_funding_ann"), "crowded": cs.get("crowded"),
+            "cross_venue": [{k: v for k, v in x.items() if k != "venues"} for x in cs.get("cross_venue", [])],
             "implied_vol": [{k: v for k, v in i.items() if k != "spark"} for i in cs.get("implied_vol", [])],
             "flows": [{k: v for k, v in i.items() if k != "spark"} for i in cs.get("flows", [])],
         },

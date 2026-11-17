@@ -96,7 +96,7 @@ def _seed_demo() -> None:
     st = get_store()
     for t in ["series", "series_meta", "perp_snapshots", "positions", "account_state", "news", "calendar", "cot",
               "short_interest", "holdings_13f", "theses", "ideas", "alerts", "ingest_log",
-              "tv_alerts", "ms_ratings", "ms_outlook"]:
+              "tv_alerts", "ms_ratings", "ms_outlook", "xvenue_snapshots"]:
         st.execute(f"DELETE FROM {t}")
     demo.seed(st)
     from . import alerts

@@ -43,6 +43,13 @@ def evaluate(store: Store) -> list[dict]:
             out.append({"key": f"funding:{coin}:{today}", "severity": "medium", "category": "crypto",
                         "message": f"{coin} funding {p['funding_ann']:+.0f}% annualized ({p['crowding']}) on a coin you hold."})
 
+    held_coins = set(store.query("SELECT DISTINCT symbol FROM positions WHERE asset_class LIKE 'crypto%'").get("symbol", []))
+    for x in crypto.cross_venue(store):
+        if x["coin"] in held_coins and x["crowding"]:
+            out.append({"key": f"xfunding:{x['coin']}:{today}", "severity": "medium", "category": "crypto",
+                        "message": f"{x['coin']} OI-weighted funding across venues {x['funding_ann_oiw']:+.0f}% annualized "
+                                   f"({x['crowding']}), OI ${x['oi_usd'] / 1e9:.2f}B."})
+
     port = risk.portfolio(store)
     pw = config.get("portfolio", {}) or {}
     for pos in port.get("positions", []):

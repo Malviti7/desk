@@ -14,7 +14,7 @@ log = logging.getLogger("desk.ingest")
 
 
 def _jobs() -> dict[str, Callable[[Store], int]]:
-    from .sources import accounts, crypto_extra, fred, hyperliquid, news, positioning, yahoo
+    from .sources import accounts, coinalyze, crypto_extra, fred, hyperliquid, news, positioning, yahoo
     from . import alerts
 
     # Order matters on a full refresh: positions first so other jobs know what you hold.
@@ -27,6 +27,8 @@ def _jobs() -> dict[str, Callable[[Store], int]]:
         "yahoo": yahoo.run,
         "fred": fred.run,
         "fred_calendar": fred.run_calendar,
+        "coinalyze": coinalyze.run,
+        "coinalyze_history": coinalyze.run_history,
         "deribit": crypto_extra.run_deribit,
         "defillama": crypto_extra.run_defillama,
         "cftc": positioning.run_cftc,

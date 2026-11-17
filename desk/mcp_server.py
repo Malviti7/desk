@@ -112,6 +112,15 @@ def get_funding_history(coin: str, days: int = 14) -> str:
 
 
 @mcp.tool()
+def get_cross_venue(coin: str | None = None) -> str:
+    """Coinalyze cross-exchange view per coin: total OI and 24h change, OI-weighted funding
+    (annualized %), funding dispersion across venues, 24h long/short liquidations, crowding,
+    Hyperliquid's share of OI, and a per-venue breakdown. Omit coin for all tracked coins.
+    History is in series cz:<COIN>:oi_usd, :funding_ann, :liq_long, :liq_short."""
+    return _out(_call("GET", "/api/crypto/venues", params={"coin": coin} if coin else None))
+
+
+@mcp.tool()
 def get_positioning() -> str:
     """Equities and positioning: sector and factor performance, CFTC COT net speculative positioning
     with 3y percentiles, short interest and days to cover, and 13F crowding across tracked funds."""
@@ -221,7 +230,8 @@ def notify_user(text: str) -> str:
 @mcp.tool()
 def refresh_data(job: str = "all") -> str:
     """Re-run data ingestion now. job: 'all' or one of hyperliquid_market, hyperliquid_account,
-    coinbase, manual_positions, hyperliquid_candles, yahoo, fred, fred_calendar, deribit, defillama,
+    coinbase, manual_positions, hyperliquid_candles, yahoo, fred, fred_calendar, coinalyze, coinalyze_history,
+    deribit, defillama,
     cftc, earnings, short_interest, sec_13f, news, alerts."""
     return _out(_call("POST", f"/api/ingest/{job}"))
 

@@ -13,6 +13,8 @@ schedule:
   hyperliquid_market: 15
   hyperliquid_account: 5
   hyperliquid_candles: 360
+  coinalyze: 30            # ~2-4 min per run because of the 40 calls/min limit
+  coinalyze_history: 1440
   deribit: 60
   defillama: 360
   cftc: 1440
@@ -112,6 +114,16 @@ crypto:
   dvol: [BTC, ETH]
   funding_hot_annualized: 0.50           # flag crowded longs above this
   funding_cold_annualized: -0.20         # flag crowded shorts below this
+
+# Coinalyze (free API key): cross-exchange OI, funding, liquidations
+coinalyze:
+  coins: []                    # empty = crypto.watch; held coins are added automatically
+  include_held: true
+  max_coins: 10
+  exchanges: [Binance, Bybit, OKX, Hyperliquid, Bitget, Deribit]
+  # Coinalyze reports funding per funding interval. Hours per interval by venue, used to
+  # annualize. Verify for any venue you add.
+  funding_interval_hours: {Hyperliquid: 1, default: 8}
 
 # ---------------------------------------------------------------- EQUITIES
 equities:
